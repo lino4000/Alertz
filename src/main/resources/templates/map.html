@@ -1,0 +1,209 @@
+<!doctype html>
+<html lang=en>
+	<head>
+		<meta charset=utf-8>
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+		<title>Alertz</title>
+		<link rel="stylesheet" href="/theme/style.css" />
+		<script src="https://polyfill.io/v3/polyfill.min.js?features=default"></script>
+		<script type="text/javascript">
+	window.map = undefined;
+	var markersArray = [];
+	const image = {
+		"FIRE" : "/img/fire.png",
+		"FLOOD" : "/img/flood.png",
+		"LANDSLIDE" : "/img/lanslide.png",
+		"HURRICANE" : "/img/hurricane.png"
+	}
+
+	window.onload = (event) => {
+	const status = document.querySelector('#status');
+
+		loadFlags( 'http://localhost:8080/showFlags' ).then( data => {
+			data.forEach( (e) => addMarker(e));
+		});
+		
+		moveMapToUserPosition();
+		
+		document.getElementById( "filter" ).addEventListener( "submit", function ( event ) {
+			event.preventDefault();
+			let formData = new FormData(event.target);
+			let data = new URLSearchParams(formData);
+			loadFlags( "/showFlags?" + data.toString() ).then( data => {
+				map.clearOverlays();
+				data.forEach( (e) => addMarker(e));
+			});
+		});
+		
+		document.getElementById( "newFlag" ).addEventListener( "submit", function ( event ) {
+			event.preventDefault();
+			let json = {};
+			let formData = new FormData(event.target);
+			let pos = getUserPosition();
+
+			console.log (pos);
+			console.log (pos.coords);
+			console.log (pos.coords.latitude);
+
+			json.latitude = pos.coords.latitude;
+			json.longitude = pos.coords.longitude;
+			json.type = formData.get('type');
+
+			addFlag( "/addFlag", JSON.stringify(json)).then( data => {
+				map.clearOverlays();
+				data.forEach( (e) => addMarker(e));
+			});
+
+		});
+	};
+	
+	function initMap() {
+		const mapOptions = {
+			center: new google.maps.LatLng(0, 0),
+			zoom: 12,
+			mapTypeId: google.maps.MapTypeId.ROADMAP
+		};
+
+		window.map = new google.maps.Map(
+			document.getElementById("map"),
+			mapOptions
+		);
+		
+		google.maps.Map.prototype.clearOverlays = function() {
+		for (var i = 0; i < markersArray.length; i++ ) {
+			markersArray[i].setMap(null);
+			}
+			markersArray.length = 0;
+		}
+	}
+
+	async function loadFlags (url) {
+		let response = await fetch(url);
+		let data = await response.json();
+		return data;
+	}
+
+	async function addFlag (url, data) {
+		console.log(data);
+		let response = await fetch(url,{
+			method: 'post',
+			headers: {
+				'Content-Type': 'application/json',
+				'Accept': 'application/json'
+
+			},
+			body: data
+		});
+		let resp = await response.json();
+		return resp;
+	}
+	
+	function addMarker(flag){
+		new google.maps.Marker({
+					position: { lat: flag.latitude, lng: flag.longitude },
+					map,
+					icon: image[flag.type]
+				});
+	}
+	
+	function moveMapToUserPosition(){
+		if(navigator.geolocation){
+			navigator.geolocation.getCurrentPosition( (position) =>
+				moveToLocation( position.coords.latitude,position.coords.longitude)
+			);
+		}else{
+			status.textContent = "Navegador não suporta/permite rastrear sua localização";
+		}
+	}
+	
+	function getUserPosition() {
+    // Simple wrapper
+    return new Promise((res, rej) => {
+        navigator.geolocation.getCurrentPosition(res, rej);
+    });
+	}
+
+	function moveToLocation(lat, lng){
+		const center = new google.maps.LatLng(lat, lng);
+		// using global variable:
+		window.map.panTo(center);
+	}
+	
+  
+	
+/*		
+			function initMap() {
+				const map = new google.maps.Map(document.getElementById("map"), {
+					zoom: 4,
+					center: { lat: -33, lng: 151 },
+				});
+				const image =
+					"https://developers.google.com/maps/documentation/javascript/examples/full/images/beachflag.png";
+				const beachMarker = new google.maps.Marker({
+					position: { lat: -33.89, lng: 151.274 },
+					map,
+					icon: image,
+				});
+				const beachMarker2 = new google.maps.Marker({
+					position: { lat: -30.89, lng: 151.274 },
+					map,
+					icon: image,
+				});
+			}
+*/		</script>
+	</head>
+	<body>
+	<div class="container-fluid h-100">
+		<div class="hstack h-100 align-items-start">
+			<div class="vsatck w-25">
+				<header class="mt-3 mb-5 text-center">
+					<img src="/img/alerta.png" alt="" />
+				</header>
+				<form id="filter" method="get" action="/showFlags">
+					<fieldset>
+						<legend class="ms-4">Filtro</legend>
+						<div class="mx-5 my-3">
+							<select class="form-select" name="type" multiple size="10" aria-label="multiple 10 select">
+								<option value="FIRE">Incêndio</option>
+								<option value="FLOOD">Enchente</option>
+								<option value="LANDSLIDE">Deslizamento</option>
+								<option value="HURRICANE">Furacão</option>
+							</select>
+						</div>
+						<div class="col-auto text-end">
+							<button type="submit" class="btn btn-primary me-5">Filtrar</button>
+						</div>
+					</fieldset>
+				</form>
+				<form id="newFlag" method="post" action="/addFlags" class="mt-5">
+					<fieldset>
+						<legend class="ms-4">Adicionar onde estou</legend>
+						<div class="mx-5 my-3">
+							<select class="form-select" name="type" aria-label="select">
+								<option value="FIRE">Incêndio</option>
+								<option value="FLOOD">Enchente</option>
+								<option value="LANDSLIDE">Deslizamento</option>
+								<option value="HURRICANE">Furacão</option>
+							</select>
+					
+						</div>
+						<div class="text-end">
+							<button type="submit" class="btn btn-primary me-5">Adicionar</button>
+						</div>
+						<div class="">
+							<p id="status"></p>
+						</div>
+					</fieldset>
+				</form>
+			</div>
+			<div id="map" class="h-100 w-75"></div>
+		</div>
+	</div>
+
+    <!-- Async script executes immediately and must be after any DOM elements used in callback. -->
+    <script
+      src="https://maps.googleapis.com/maps/api/js?key=AIzaSyB41DRUbKWJHPxaFjMAwdrzWzbVKartNGg&callback=initMap&v=weekly&channel=2"
+      async
+    ></script>
+	</body>
+</html>
