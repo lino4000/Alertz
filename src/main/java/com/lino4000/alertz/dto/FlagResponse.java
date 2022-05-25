@@ -2,18 +2,16 @@ package com.lino4000.alertz.dto;
 
 import com.lino4000.alertz.model.FlagType;
 
-import lombok.Value;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
 
-@Value
+@Getter
+@NoArgsConstructor
+@AllArgsConstructor
 public class FlagResponse {
 	
-	public Long latitude;
-	public Long longitude;
+	public Double latitude;
+	public Double longitude;
 	public FlagType type;
-	
-    public FlagResponse() {
-        this.latitude = null;
-		this.longitude = null;
-		this.type = null;
-    }
 }

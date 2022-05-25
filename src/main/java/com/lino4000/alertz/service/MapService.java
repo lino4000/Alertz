@@ -19,7 +19,6 @@ public class MapService {
 	
 	public List<Flag> addFlag(FlagResponse flagResponse) {
 		Flag flag = Flag.builder()
-				.id(flagRepository.count()+1)
 				.latitude(flagResponse.latitude)
 				.longitude(flagResponse.longitude)
 				.type(flagResponse.type)
@@ -36,4 +35,10 @@ public class MapService {
 			return flagRepository.findAllByTypeIn(type);
 	}
 
+	public List<Flag> getFlagsByDistance(Double latitude, Double longitude, Double distance, List<FlagType> type){
+		if(null == type)
+			return flagRepository.findAllByDistance(latitude, longitude, distance);
+		else
+			return flagRepository.findAllByTypeAndDistance(latitude, longitude, distance, type);
+	}
 }

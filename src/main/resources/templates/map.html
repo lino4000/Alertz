@@ -5,161 +5,16 @@
 		<meta name="viewport" content="width=device-width, initial-scale=1.0">
 		<title>Alertz</title>
 		<link rel="stylesheet" href="/theme/style.css" />
-		<script src="https://polyfill.io/v3/polyfill.min.js?features=default"></script>
-		<script type="text/javascript">
-	window.map = undefined;
-	var markersArray = [];
-	const image = {
-		"FIRE" : "/img/fire.png",
-		"FLOOD" : "/img/flood.png",
-		"LANDSLIDE" : "/img/lanslide.png",
-		"HURRICANE" : "/img/hurricane.png"
-	}
-
-	window.onload = (event) => {
-	const status = document.querySelector('#status');
-
-		loadFlags( 'http://localhost:8080/showFlags' ).then( data => {
-			data.forEach( (e) => addMarker(e));
-		});
-		
-		moveMapToUserPosition();
-		
-		document.getElementById( "filter" ).addEventListener( "submit", function ( event ) {
-			event.preventDefault();
-			let formData = new FormData(event.target);
-			let data = new URLSearchParams(formData);
-			loadFlags( "/showFlags?" + data.toString() ).then( data => {
-				map.clearOverlays();
-				data.forEach( (e) => addMarker(e));
-			});
-		});
-		
-		document.getElementById( "newFlag" ).addEventListener( "submit", function ( event ) {
-			event.preventDefault();
-			let json = {};
-			let formData = new FormData(event.target);
-			let pos = getUserPosition();
-
-			console.log (pos);
-			console.log (pos.coords);
-			console.log (pos.coords.latitude);
-
-			json.latitude = pos.coords.latitude;
-			json.longitude = pos.coords.longitude;
-			json.type = formData.get('type');
-
-			addFlag( "/addFlag", JSON.stringify(json)).then( data => {
-				map.clearOverlays();
-				data.forEach( (e) => addMarker(e));
-			});
-
-		});
-	};
-	
-	function initMap() {
-		const mapOptions = {
-			center: new google.maps.LatLng(0, 0),
-			zoom: 12,
-			mapTypeId: google.maps.MapTypeId.ROADMAP
-		};
-
-		window.map = new google.maps.Map(
-			document.getElementById("map"),
-			mapOptions
-		);
-		
-		google.maps.Map.prototype.clearOverlays = function() {
-		for (var i = 0; i < markersArray.length; i++ ) {
-			markersArray[i].setMap(null);
-			}
-			markersArray.length = 0;
-		}
-	}
-
-	async function loadFlags (url) {
-		let response = await fetch(url);
-		let data = await response.json();
-		return data;
-	}
-
-	async function addFlag (url, data) {
-		console.log(data);
-		let response = await fetch(url,{
-			method: 'post',
-			headers: {
-				'Content-Type': 'application/json',
-				'Accept': 'application/json'
-
-			},
-			body: data
-		});
-		let resp = await response.json();
-		return resp;
-	}
-	
-	function addMarker(flag){
-		new google.maps.Marker({
-					position: { lat: flag.latitude, lng: flag.longitude },
-					map,
-					icon: image[flag.type]
-				});
-	}
-	
-	function moveMapToUserPosition(){
-		if(navigator.geolocation){
-			navigator.geolocation.getCurrentPosition( (position) =>
-				moveToLocation( position.coords.latitude,position.coords.longitude)
-			);
-		}else{
-			status.textContent = "Navegador não suporta/permite rastrear sua localização";
-		}
-	}
-	
-	function getUserPosition() {
-    // Simple wrapper
-    return new Promise((res, rej) => {
-        navigator.geolocation.getCurrentPosition(res, rej);
-    });
-	}
-
-	function moveToLocation(lat, lng){
-		const center = new google.maps.LatLng(lat, lng);
-		// using global variable:
-		window.map.panTo(center);
-	}
-	
-  
-	
-/*		
-			function initMap() {
-				const map = new google.maps.Map(document.getElementById("map"), {
-					zoom: 4,
-					center: { lat: -33, lng: 151 },
-				});
-				const image =
-					"https://developers.google.com/maps/documentation/javascript/examples/full/images/beachflag.png";
-				const beachMarker = new google.maps.Marker({
-					position: { lat: -33.89, lng: 151.274 },
-					map,
-					icon: image,
-				});
-				const beachMarker2 = new google.maps.Marker({
-					position: { lat: -30.89, lng: 151.274 },
-					map,
-					icon: image,
-				});
-			}
-*/		</script>
+		<link rel="icon" type="image/png" href="/img/alerta.png" />
 	</head>
 	<body>
-	<div class="container-fluid h-100">
+	<div class="container-fluid h-100 pe-0">
 		<div class="hstack h-100 align-items-start">
 			<div class="vsatck w-25">
 				<header class="mt-3 mb-5 text-center">
 					<img src="/img/alerta.png" alt="" />
 				</header>
-				<form id="filter" method="get" action="/showFlags">
+				<form id="filter" method="get" action="/flag">
 					<fieldset>
 						<legend class="ms-4">Filtro</legend>
 						<div class="mx-5 my-3">
@@ -170,12 +25,32 @@
 								<option value="HURRICANE">Furacão</option>
 							</select>
 						</div>
+						<div class="mx-5 mt-3 mb-4 form-floating px-2 pb-3">
+							<label for="distance" class="hstack w-100 px-0 mt-2 form-label">
+								<span class="">100m</span>
+								<span class="mx-auto">10km</span>
+								<span class="">1Mm</span>
+							</label>
+							<input class="form-range" name="distance" id="distance" type="range" min="1" max="9" step=".2" list="tickmarks" />
+
+							<datalist id="tickmarks">
+							  <option value="1" label="100m">
+							  <option value="2">
+							  <option value="3">
+							  <option value="4">
+							  <option value="5" label="10km">
+							  <option value="6">
+							  <option value="7">
+							  <option value="8">
+							  <option value="9" label="1000km">
+							</datalist>
+						</div>
 						<div class="col-auto text-end">
 							<button type="submit" class="btn btn-primary me-5">Filtrar</button>
 						</div>
 					</fieldset>
 				</form>
-				<form id="newFlag" method="post" action="/addFlags" class="mt-5">
+				<form id="newFlag" method="post" action="/flag" class="mt-5">
 					<fieldset>
 						<legend class="ms-4">Adicionar onde estou</legend>
 						<div class="mx-5 my-3">
@@ -200,10 +75,11 @@
 		</div>
 	</div>
 
-    <!-- Async script executes immediately and must be after any DOM elements used in callback. -->
+	<script src="https://polyfill.io/v3/polyfill.min.js?features=default"></script>
     <script
-      src="https://maps.googleapis.com/maps/api/js?key=AIzaSyB41DRUbKWJHPxaFjMAwdrzWzbVKartNGg&callback=initMap&v=weekly&channel=2"
-      async
+      src="https://maps.googleapis.com/maps/api/js?key=AIzaSyB41DRUbKWJHPxaFjMAwdrzWzbVKartNGg&callback=initMap&v=weekly"
+      defer
     ></script>
-	</body>
+	<script src="/js/functions.js"></script>
+</body>
 </html>
